@@ -9,6 +9,7 @@ import productRoutes from "./routes/productRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
 import catalogueRoutes from "./routes/catalogueRoutes.js";
 import contactFormRoutes from "./routes/contactFormRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use("/api/catalogues", catalogueRoutes);
 
 app.use("/api/blogs", blogRoutes);
 app.use("/api/contact-forms", contactFormRoutes);
+app.use("/api/admin", adminRoutes);
 
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;
