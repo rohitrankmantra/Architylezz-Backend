@@ -19,7 +19,7 @@ app.use(express.json());
 // ✅ Allowed origins (comma-separated in .env)
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",")
-  : ["http://localhost:3000"]; // fallback for dev
+  : ["http://localhost:3000","https://architylez.vercel.app"]; // fallback for dev
 
 // ✅ CORS setup
 app.use(
