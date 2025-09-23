@@ -6,14 +6,11 @@ import express from "express";
 import cors from "cors";
 import { connectDB } from "./lib/db.js"; 
 import productRoutes from "./routes/productRoutes.js";
+import blogRoutes from "./routes/blogRoutes.js";
 import catalogueRoutes from "./routes/catalogueRoutes.js";
-
-
-
+import contactFormRoutes from "./routes/contactFormRoutes.js";
 
 const app = express();
-
-
 
 // ✅ Middleware
 app.use(express.json());
@@ -46,6 +43,9 @@ app.get("/", (req, res) => {
 // ✅ Routes
 app.use("/api/products", productRoutes);
 app.use("/api/catalogues", catalogueRoutes);  
+
+app.use("/api/blogs", blogRoutes);
+app.use("/api/contact-forms", contactFormRoutes);
 
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;
