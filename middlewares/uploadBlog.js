@@ -16,7 +16,10 @@ const upload = multer({
   },
 });
 
-// Single file upload for thumbnail
-const uploadBlogFiles = upload.single("thumbnail");
+// Multiple fields: 1 thumbnail + multiple images
+const uploadBlogFiles = upload.fields([
+  { name: "thumbnail", maxCount: 1 },
+  { name: "images", maxCount: 10 },
+]);
 
 export default uploadBlogFiles;

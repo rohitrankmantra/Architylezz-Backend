@@ -4,13 +4,15 @@ const BlogSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     excerpt: { type: String, required: true, trim: true },
-    content: { type: String, required: true }, // Full blog content
+    content: { type: mongoose.Schema.Types.Mixed, required: true }, // Stores Tiptap JSON
     category: { type: String, required: true },
     author: { type: String, required: true },
+
     thumbnail: {
-      public_id: { type: String, required: true },
-      url: { type: String, required: true },
+      public_id: { type: String },
+      url: { type: String },
     },
+
     images: [
       {
         public_id: String,

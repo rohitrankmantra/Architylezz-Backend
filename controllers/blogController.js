@@ -32,20 +32,37 @@ export const createBlog = async (req, res) => {
       return res.status(400).json({ message: "Please fill all required fields" });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ message: "Thumbnail is required" });
+    // Parse content if it's JSON string (from frontend Tiptap)
+    let parsedContent = content;
+    try {
+      parsedContent = typeof content === "string" ? JSON.parse(content) : content;
+    } catch {
+      // Keep as-is if parsing fails
     }
 
-    // Upload thumbnail
-    const thumbnail = await uploadToCloudinary(req.file.buffer, "blogs/thumbnails");
+    // Upload main thumbnail (optional)
+    let thumbnail = null;
+    if (req.files && req.files.thumbnail && req.files.thumbnail.length > 0) {
+      thumbnail = await uploadToCloudinary(req.files.thumbnail[0].buffer, "blogs/thumbnails");
+    }
+
+    // Upload additional images if any
+    let images = [];
+    if (req.files && req.files.images && req.files.images.length > 0) {
+      for (const file of req.files.images) {
+        const img = await uploadToCloudinary(file.buffer, "blogs/images");
+        images.push(img);
+      }
+    }
 
     const newBlog = new Blog({
       title,
       excerpt,
-      content,
+      content: parsedContent,
       category,
       author,
       thumbnail,
+      images,
     });
 
     const savedBlog = await newBlog.save();
@@ -92,18 +109,34 @@ export const updateBlog = async (req, res) => {
     if (!blog) return res.status(404).json({ message: "Blog not found" });
 
     const { title, excerpt, content, category, author } = req.body;
+
     if (title) blog.title = title;
     if (excerpt) blog.excerpt = excerpt;
-    if (content) blog.content = content;
+    if (content) {
+      // Parse Tiptap JSON
+      try {
+        blog.content = typeof content === "string" ? JSON.parse(content) : content;
+      } catch {
+        blog.content = content;
+      }
+    }
     if (category) blog.category = category;
     if (author) blog.author = author;
 
     // Replace thumbnail if uploaded
-    if (req.file) {
+    if (req.files && req.files.thumbnail && req.files.thumbnail.length > 0) {
       if (blog.thumbnail?.public_id) {
         await cloudinary.uploader.destroy(blog.thumbnail.public_id);
       }
-      blog.thumbnail = await uploadToCloudinary(req.file.buffer, "blogs/thumbnails");
+      blog.thumbnail = await uploadToCloudinary(req.files.thumbnail[0].buffer, "blogs/thumbnails");
+    }
+
+    // Add new additional images if uploaded
+    if (req.files && req.files.images && req.files.images.length > 0) {
+      for (const file of req.files.images) {
+        const img = await uploadToCloudinary(file.buffer, "blogs/images");
+        blog.images.push(img);
+      }
     }
 
     const updatedBlog = await blog.save();
@@ -125,6 +158,13 @@ export const deleteBlog = async (req, res) => {
     // Delete thumbnail
     if (blog.thumbnail?.public_id) {
       await cloudinary.uploader.destroy(blog.thumbnail.public_id);
+    }
+
+    // Delete additional images
+    if (blog.images?.length > 0) {
+      for (const img of blog.images) {
+        if (img.public_id) await cloudinary.uploader.destroy(img.public_id);
+      }
     }
 
     await Blog.findByIdAndDelete(req.params.id);
