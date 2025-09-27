@@ -13,6 +13,14 @@ const contactFormSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    service: {
+      type: String,
+      trim: true,
+    },
     message: {
       type: String,
       required: true,
@@ -24,3 +32,4 @@ const contactFormSchema = new mongoose.Schema(
 
 export default mongoose.models.ContactForm ||
   mongoose.model("ContactForm", contactFormSchema);
+

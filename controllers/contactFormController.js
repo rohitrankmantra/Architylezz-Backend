@@ -4,16 +4,24 @@ import { sendAdminMail } from "../utils/mailer.js";
 /* Create new contact */
 export const createContactForm = async (req, res) => {
   try {
-    const { name, email, message } = req.body;
+    const { name, email, phone, service, message } = req.body;
+
     if (!name || !email || !message) {
-      return res.status(400).json({ message: "All fields are required" });
+      return res.status(400).json({ message: "Name, email and message are required" });
     }
 
-    const newContact = new ContactForm({ name, email, message });
+    const newContact = new ContactForm({
+      name,
+      email,
+      phone,
+      service,
+      message,
+    });
+
     await newContact.save();
 
-    // Send admin mail
-    await sendAdminMail({ name, email, message });
+    // Send admin mail with all fields
+    await sendAdminMail({ name, email, phone, service, message });
 
     res.status(201).json({ message: "✅ Contact form submitted successfully" });
   } catch (error) {
@@ -44,3 +52,4 @@ export const deleteContact = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+

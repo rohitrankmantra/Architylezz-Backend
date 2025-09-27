@@ -11,16 +11,19 @@ const transporter = nodemailer.createTransport({
 /**
  * Send mail to admin
  */
-export const sendAdminMail = async ({ name, email, message }) => {
+export const sendAdminMail = async ({ name, email, phone, service, message }) => {
   const mailOptions = {
-    from: `"Website Contact Form" <${process.env.ADMIN_EMAIL}>`,
+    from: `"Architylezz Website Contact Form" <${process.env.ADMIN_EMAIL}>`,
     to: process.env.ADMIN_EMAIL, // Admin gets the mail
     subject: "📩 New Contact Form Submission",
     html: `
       <h2>New Contact Form Submission</h2>
       <p><b>Name:</b> ${name}</p>
       <p><b>Email:</b> ${email}</p>
-      <p><b>Message:</b> ${message}</p>
+      ${phone ? `<p><b>Phone:</b> ${phone}</p>` : ""}
+      ${service ? `<p><b>Service:</b> ${service}</p>` : ""}
+      <p><b>Message:</b></p>
+      <p>${message}</p>
     `,
   };
 

@@ -9,6 +9,9 @@ const CatalogueSchema = new mongoose.Schema(
       enum: ["GVT", "Subway", "Wall", "Wood", "General"],
       default: "General",
     },
+thumbnail: {
+  url: { type: String, required: false },
+},
     pdf: {
       public_id: { type: String, required: true }, // Cloudinary public_id
       url: { type: String, required: true },       // Direct Cloudinary URL
