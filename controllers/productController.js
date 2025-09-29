@@ -28,7 +28,21 @@ const uploadToCloudinary = (fileBuffer, folder) => {
 ---------------------------------- */
 export const createProduct = async (req, res) => {
   try {
-    const { title, description, size, category, finish } = req.body;
+    const {
+      title,
+      description,
+      size,
+      category,
+      finish,
+      actualSize,
+      filterSize,
+      materialType,
+      application,
+      brand,
+      quality,
+      coverageArea,
+      pcsPerBox,
+    } = req.body;
 
     if (!title || !description || !size || !category || !finish) {
       return res.status(400).json({ message: "Please fill all required fields" });
@@ -38,27 +52,44 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ message: "Thumbnail is required" });
     }
     const thumbnailFile = req.files.thumbnail[0];
-    const thumbnail = await uploadToCloudinary(thumbnailFile.buffer, "products/thumbnails");
+    const thumbnail = await uploadToCloudinary(
+      thumbnailFile.buffer,
+      "products/thumbnails"
+    );
 
     if (!req.files?.images || req.files.images.length === 0) {
-      return res.status(400).json({ message: "At least one product image is required" });
+      return res
+        .status(400)
+        .json({ message: "At least one product image is required" });
     }
     const images = await Promise.all(
-      req.files.images.map((file) => uploadToCloudinary(file.buffer, "products/images"))
+      req.files.images.map((file) =>
+        uploadToCloudinary(file.buffer, "products/images")
+      )
     );
 
     const newProduct = new Product({
       title,
       description,
-      thumbnail, // { url, public_id }
-      images,    // [{ url, public_id }]
-      size,
+      thumbnail,
+      images,
+      size: [].concat(size), // ✅ ensure array
       category,
-      finish,
+      finish: [].concat(finish), // ✅ ensure array
+      actualSize,
+      filterSize,
+      materialType,
+      application: application ? [].concat(application) : [],
+      brand,
+      quality,
+      coverageArea,
+      pcsPerBox,
     });
 
     const savedProduct = await newProduct.save();
-    res.status(201).json({ message: "✅ Product created successfully", product: savedProduct });
+    res
+      .status(201)
+      .json({ message: "✅ Product created successfully", product: savedProduct });
   } catch (error) {
     console.error("❌ Error creating product:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -100,20 +131,42 @@ export const getProductById = async (req, res) => {
 ---------------------------------- */
 export const updateProduct = async (req, res) => {
   try {
-    const { title, description, size, category, finish } = req.body;
+    const {
+      title,
+      description,
+      size,
+      category,
+      finish,
+      actualSize,
+      filterSize,
+      materialType,
+      application,
+      brand,
+      quality,
+      coverageArea,
+      pcsPerBox,
+    } = req.body;
+
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
     // 🔹 Update text fields
     if (title) product.title = title;
     if (description) product.description = description;
-    if (size) product.size = size;
+    if (size) product.size = [].concat(size); // ✅ ensure array
     if (category) product.category = category;
-    if (finish) product.finish = finish;
+    if (finish) product.finish = [].concat(finish); // ✅ ensure array
+    if (actualSize) product.actualSize = actualSize;
+    if (filterSize) product.filterSize = filterSize;
+    if (materialType) product.materialType = materialType;
+    if (application) product.application = [].concat(application);
+    if (brand) product.brand = brand;
+    if (quality) product.quality = quality;
+    if (coverageArea) product.coverageArea = coverageArea;
+    if (pcsPerBox) product.pcsPerBox = pcsPerBox;
 
     // 🔹 Replace thumbnail if new one uploaded
     if (req.files?.thumbnail && req.files.thumbnail.length > 0) {
-      // delete old one
       if (product.thumbnail?.public_id) {
         await cloudinary.uploader.destroy(product.thumbnail.public_id);
       }
@@ -126,7 +179,6 @@ export const updateProduct = async (req, res) => {
 
     // 🔹 Replace images if new ones uploaded
     if (req.files?.images && req.files.images.length > 0) {
-      // delete old ones
       if (Array.isArray(product.images) && product.images.length > 0) {
         for (const img of product.images) {
           if (img.public_id) await cloudinary.uploader.destroy(img.public_id);
@@ -148,7 +200,6 @@ export const updateProduct = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 /* ----------------------------------
    @desc   Delete product
@@ -178,4 +229,3 @@ export const deleteProduct = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-

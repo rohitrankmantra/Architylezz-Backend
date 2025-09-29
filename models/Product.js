@@ -1,4 +1,3 @@
-// models/Product.js
 import mongoose from "mongoose";
 
 const imageSchema = new mongoose.Schema(
@@ -21,16 +20,18 @@ const productSchema = new mongoose.Schema(
       required: [true, "Product description is required"],
     },
     thumbnail: {
-      type: imageSchema, // ✅ stores { url, public_id }
+      type: imageSchema,
       required: true,
     },
     images: {
-      type: [imageSchema], // ✅ array of { url, public_id }
+      type: [imageSchema],
       validate: [(arr) => arr.length > 0, "At least one image is required"],
     },
+
+    // ✅ Changed from String → Array of String
     size: {
-      type: String,
-      required: [true, "Product size is required"],
+      type: [String],
+      required: [true, "At least one product size is required"],
     },
     category: {
       type: String,
@@ -38,9 +39,19 @@ const productSchema = new mongoose.Schema(
       required: [true, "Product category is required"],
     },
     finish: {
-      type: String,
-      required: [true, "Product finish is required"],
+      type: [String],
+      required: [true, "At least one product finish is required"],
     },
+
+    /* ✅ Extra fields */
+    actualSize: { type: String },        // e.g. 300x600mm
+    filterSize: { type: String },        // e.g. 1x2 Feet
+    materialType: { type: String },      // e.g. Ceramic
+    application: { type: [String] },     // e.g. [LivingRoom, Kitchen]
+    brand: { type: String },             // e.g. MyTyles
+    quality: { type: String },           // e.g. Premium
+    coverageArea: { type: Number },      // e.g. 9.69 (sq. ft)
+    pcsPerBox: { type: Number },         // e.g. 5
   },
   { timestamps: true }
 );
