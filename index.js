@@ -10,6 +10,7 @@ import blogRoutes from "./routes/blogRoutes.js";
 import catalogueRoutes from "./routes/catalogueRoutes.js";
 import contactFormRoutes from "./routes/contactFormRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import projectRoutes from "./routes/projectRoutes.js";
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.get("/", (req, res) => {
 // ✅ Routes
 app.use("/api/products", productRoutes);
 app.use("/api/catalogues", catalogueRoutes);  
+app.use("/api/projects", projectRoutes);
 
 app.use("/api/blogs", blogRoutes);
 app.use("/api/contact-forms", contactFormRoutes);
