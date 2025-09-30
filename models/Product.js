@@ -43,15 +43,17 @@ const productSchema = new mongoose.Schema(
       required: [true, "At least one product finish is required"],
     },
 
-    /* ✅ Extra fields */
-    actualSize: { type: String },        // e.g. 300x600mm
-    filterSize: { type: String },        // e.g. 1x2 Feet
-    materialType: { type: String },      // e.g. Ceramic
-    application: { type: [String] },     // e.g. [LivingRoom, Kitchen]
-    brand: { type: String },             // e.g. MyTyles
-    quality: { type: String },           // e.g. Premium
-    coverageArea: { type: Number },      // e.g. 9.69 (sq. ft)
-    pcsPerBox: { type: Number },         // e.g. 5
+    filterSize: {
+      type: [String],
+      required: [true, "At least one filter size is required"],
+    },
+    // e.g. 1x2 Feet
+    materialType: { type: String }, // e.g. Ceramic
+    application: { type: [String] }, // e.g. [LivingRoom, Kitchen]
+    brand: { type: String }, // e.g. MyTyles
+    quality: { type: String }, // e.g. Premium
+    coverageArea: { type: Number }, // e.g. 9.69 (sq. ft)
+    pcsPerBox: { type: Number }, // e.g. 5
   },
   { timestamps: true }
 );
