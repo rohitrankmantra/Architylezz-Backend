@@ -31,6 +31,8 @@ export const createProduct = async (req, res) => {
     const {
       title,
       description,
+      metaTitle,
+      metaDescription,
       size,
       category,
       finish,
@@ -71,11 +73,13 @@ export const createProduct = async (req, res) => {
     const newProduct = new Product({
       title,
       description,
+      metaTitle: metaTitle || "",
+      metaDescription: metaDescription || "",
       thumbnail,
       images,
-      size: [].concat(size), // ✅ ensure array
+      size: [].concat(size), // ensure array
       category,
-      finish: [].concat(finish), // ✅ ensure array
+      finish: [].concat(finish),
       actualSize,
       filterSize,
       materialType,
@@ -134,6 +138,8 @@ export const updateProduct = async (req, res) => {
     const {
       title,
       description,
+      metaTitle,
+      metaDescription,
       size,
       category,
       finish,
@@ -153,9 +159,11 @@ export const updateProduct = async (req, res) => {
     // 🔹 Update text fields
     if (title) product.title = title;
     if (description) product.description = description;
-    if (size) product.size = [].concat(size); // ✅ ensure array
+    if (metaTitle) product.metaTitle = metaTitle;
+    if (metaDescription) product.metaDescription = metaDescription;
+    if (size) product.size = [].concat(size);
     if (category) product.category = category;
-    if (finish) product.finish = [].concat(finish); // ✅ ensure array
+    if (finish) product.finish = [].concat(finish);
     if (actualSize) product.actualSize = actualSize;
     if (filterSize) product.filterSize = filterSize;
     if (materialType) product.materialType = materialType;

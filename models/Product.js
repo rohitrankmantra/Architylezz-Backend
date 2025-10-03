@@ -47,6 +47,17 @@ const productSchema = new mongoose.Schema(
       type: [String],
       required: [true, "At least one filter size is required"],
     },
+
+     metaTitle: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    metaDescription: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     // e.g. 1x2 Feet
     materialType: { type: String }, // e.g. Ceramic
     application: { type: [String] }, // e.g. [LivingRoom, Kitchen]
