@@ -11,6 +11,8 @@ import catalogueRoutes from "./routes/catalogueRoutes.js";
 import contactFormRoutes from "./routes/contactFormRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
+import homeMetaRoutes from "./routes/homeMetaRoutes.js";
+
 
 const app = express();
 
@@ -50,6 +52,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/contact-forms", contactFormRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/home-meta", homeMetaRoutes);
 
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;
