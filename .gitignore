@@ -39,18 +39,6 @@ dist/
 *.njsproj
 *.sln
 
-# Uploaded files or temporary files
-uploads/
-*.pdf
-*.jpg
-*.jpeg
-*.png
-*.gif
-
-# Mac specific
-.AppleDouble
-.LSOverride
-
 # Temporary system files
 *.swp
 *.swo
