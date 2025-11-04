@@ -12,22 +12,33 @@ const router = express.Router();
 
 // === CRUD Routes ===
 
-// Create catalogue (backend handles PDF upload to Cloudinary)
-router.post("/create", uploadCatalogue.single("pdf"), createCatalogue);
+// ✅ Create catalogue (PDF required, thumbnail optional)
+router.post(
+  "/create",
+  uploadCatalogue.fields([
+    { name: "pdf", maxCount: 1 },
+    { name: "thumbnail", maxCount: 1 }, // optional
+  ]),
+  createCatalogue
+);
 
-// Update catalogue (backend handles new PDF upload if provided)
-router.put("/:id", uploadCatalogue.single("pdf"), updateCatalogue);
+// ✅ Update catalogue (PDF or thumbnail can be replaced)
+router.put(
+  "/:id",
+  uploadCatalogue.fields([
+    { name: "pdf", maxCount: 1 },
+    { name: "thumbnail", maxCount: 1 }, // optional
+  ]),
+  updateCatalogue
+);
 
-// Delete catalogue
+// ✅ Delete catalogue
 router.delete("/:id", deleteCatalogue);
 
-// Get all catalogues
+// ✅ Get all catalogues
 router.get("/", getAllCatalogues);
 
-// Get single catalogue
+// ✅ Get single catalogue by ID
 router.get("/:id", getCatalogueById);
-
-// Download / stream PDF
-// router.get("/:id/pdf", getCataloguePdf);
 
 export default router;

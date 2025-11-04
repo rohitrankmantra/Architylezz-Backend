@@ -10,11 +10,23 @@ import uploadProjectImage from "../middlewares/uploadProjectImage.js"; // handle
 
 const router = express.Router();
 
-// Routes
-router.get("/", getProjects);                                  // GET all projects
-router.post("/", uploadProjectImage, createProject);           // CREATE new project (thumbnail + optional images)
-router.get("/:id", getProjectById);                            // GET single project
-router.put("/:id", uploadProjectImage, updateProject);         // UPDATE project (thumbnail + optional images)
-router.delete("/:id", deleteProject);                          // DELETE project
+/* -----------------------------
+   Project Routes
+----------------------------- */
+
+// Get all projects
+router.get("/", getProjects);
+
+// Get single project by ID
+router.get("/:id", getProjectById);
+
+// Create new project
+router.post("/create", uploadProjectImage, createProject);
+
+// Update existing project
+router.put("/:id", uploadProjectImage, updateProject);
+
+// Delete project
+router.delete("/:id", deleteProject);
 
 export default router;

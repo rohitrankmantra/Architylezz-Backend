@@ -1,24 +1,14 @@
+import fs from "fs";
+import path from "path";
 import Blog from "../models/Blog.js";
-import cloudinary from "../utils/cloudinary.js";
 
 /* -----------------------------
-   Helper: upload buffer → Cloudinary
+   Helper: build local file URL
 ----------------------------- */
-const uploadToCloudinary = (fileBuffer, folder) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: "image", access_mode: "public" },
-      (error, result) => {
-        if (error) reject(error);
-        else
-          resolve({
-            url: result.secure_url,
-            public_id: result.public_id,
-          });
-      }
-    );
-    stream.end(fileBuffer);
-  });
+const getLocalFileUrl = (req, filename, folder) => {
+  // Adjust to your server URL if needed
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  return `${baseUrl}/uploads/${folder}/${filename}`;
 };
 
 /* -----------------------------
@@ -32,27 +22,34 @@ export const createBlog = async (req, res) => {
       return res.status(400).json({ message: "Please fill all required fields" });
     }
 
-    // Parse content if it's JSON string (from frontend Tiptap)
     let parsedContent = content;
     try {
       parsedContent = typeof content === "string" ? JSON.parse(content) : content;
-    } catch {
-      // Keep as-is if parsing fails
-    }
+    } catch {}
 
-    // Upload main thumbnail (optional)
+    // Prepare upload folders
+    const blogFolder = path.join(process.cwd(), "uploads/blogs");
+    if (!fs.existsSync(blogFolder)) fs.mkdirSync(blogFolder, { recursive: true });
+
+    // Thumbnail (optional)
     let thumbnail = null;
-    if (req.files && req.files.thumbnail && req.files.thumbnail.length > 0) {
-      thumbnail = await uploadToCloudinary(req.files.thumbnail[0].buffer, "blogs/thumbnails");
+    if (req.files?.thumbnail?.[0]) {
+      const file = req.files.thumbnail[0];
+      thumbnail = {
+        url: getLocalFileUrl(req, file.filename, "blogs"),
+        filename: file.filename,
+      };
     }
 
-    // Upload additional images if any
-    let images = [];
-    if (req.files && req.files.images && req.files.images.length > 0) {
-      for (const file of req.files.images) {
-        const img = await uploadToCloudinary(file.buffer, "blogs/images");
-        images.push(img);
-      }
+    // Images (optional)
+    const images = [];
+    if (req.files?.images?.length) {
+      req.files.images.forEach((file) => {
+        images.push({
+          url: getLocalFileUrl(req, file.filename, "blogs"),
+          filename: file.filename,
+        });
+      });
     }
 
     const newBlog = new Blog({
@@ -74,7 +71,7 @@ export const createBlog = async (req, res) => {
 };
 
 /* -----------------------------
-   Get all blogs
+   Get All Blogs
 ----------------------------- */
 export const getAllBlogs = async (req, res) => {
   try {
@@ -87,7 +84,7 @@ export const getAllBlogs = async (req, res) => {
 };
 
 /* -----------------------------
-   Get single blog
+   Get Blog by ID
 ----------------------------- */
 export const getBlogById = async (req, res) => {
   try {
@@ -109,11 +106,9 @@ export const updateBlog = async (req, res) => {
     if (!blog) return res.status(404).json({ message: "Blog not found" });
 
     const { title, excerpt, content, category, author } = req.body;
-
     if (title) blog.title = title;
     if (excerpt) blog.excerpt = excerpt;
     if (content) {
-      // Parse Tiptap JSON
       try {
         blog.content = typeof content === "string" ? JSON.parse(content) : content;
       } catch {
@@ -124,19 +119,27 @@ export const updateBlog = async (req, res) => {
     if (author) blog.author = author;
 
     // Replace thumbnail if uploaded
-    if (req.files && req.files.thumbnail && req.files.thumbnail.length > 0) {
-      if (blog.thumbnail?.public_id) {
-        await cloudinary.uploader.destroy(blog.thumbnail.public_id);
+    if (req.files?.thumbnail?.[0]) {
+      // Delete old thumbnail file if exists
+      if (blog.thumbnail?.filename) {
+        const oldPath = path.join(process.cwd(), "uploads/blogs", blog.thumbnail.filename);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
-      blog.thumbnail = await uploadToCloudinary(req.files.thumbnail[0].buffer, "blogs/thumbnails");
+      const file = req.files.thumbnail[0];
+      blog.thumbnail = {
+        url: getLocalFileUrl(req, file.filename, "blogs"),
+        filename: file.filename,
+      };
     }
 
-    // Add new additional images if uploaded
-    if (req.files && req.files.images && req.files.images.length > 0) {
-      for (const file of req.files.images) {
-        const img = await uploadToCloudinary(file.buffer, "blogs/images");
-        blog.images.push(img);
-      }
+    // Add new images
+    if (req.files?.images?.length) {
+      req.files.images.forEach((file) => {
+        blog.images.push({
+          url: getLocalFileUrl(req, file.filename, "blogs"),
+          filename: file.filename,
+        });
+      });
     }
 
     const updatedBlog = await blog.save();
@@ -155,15 +158,19 @@ export const deleteBlog = async (req, res) => {
     const blog = await Blog.findById(req.params.id);
     if (!blog) return res.status(404).json({ message: "Blog not found" });
 
-    // Delete thumbnail
-    if (blog.thumbnail?.public_id) {
-      await cloudinary.uploader.destroy(blog.thumbnail.public_id);
+    // Delete local thumbnail
+    if (blog.thumbnail?.filename) {
+      const thumbPath = path.join(process.cwd(), "uploads/blogs", blog.thumbnail.filename);
+      if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
     }
 
-    // Delete additional images
-    if (blog.images?.length > 0) {
+    // Delete local images
+    if (blog.images?.length) {
       for (const img of blog.images) {
-        if (img.public_id) await cloudinary.uploader.destroy(img.public_id);
+        if (img.filename) {
+          const imgPath = path.join(process.cwd(), "uploads/blogs", img.filename);
+          if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+        }
       }
     }
 

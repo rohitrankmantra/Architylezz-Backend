@@ -13,11 +13,14 @@ import adminRoutes from "./routes/adminRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import homeMetaRoutes from "./routes/homeMetaRoutes.js";
 
-
 const app = express();
 
 // ✅ Middleware
 app.use(express.json());
+
+// ✅ Serve uploaded images & files
+app.use("/uploads", express.static("uploads"));
+
 
 // ✅ Allowed origins (comma-separated in .env)
 const allowedOrigins = process.env.ALLOWED_ORIGINS

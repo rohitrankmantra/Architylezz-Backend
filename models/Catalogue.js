@@ -9,15 +9,21 @@ const CatalogueSchema = new mongoose.Schema(
       enum: ["GVT", "Subway", "Wall", "Wood", "General"],
       default: "General",
     },
-thumbnail: {
-  url: { type: String, required: false },
-},
+
+    // Optional thumbnail
+    thumbnail: {
+      url: { type: String, required: false },      // Local image path or public URL
+      filename: { type: String, required: false }, // Saved file name
+    },
+
+    // Required PDF
     pdf: {
-      public_id: { type: String, required: true }, // Cloudinary public_id
-      url: { type: String, required: true },       // Direct Cloudinary URL
+      url: { type: String, required: true },       // Local PDF path or public URL
+      filename: { type: String, required: true },  // Saved file name
     },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Catalogue", CatalogueSchema);
+// Avoid model overwrite issues in development with Next.js hot reload
+export default mongoose.models.Catalogue || mongoose.model("Catalogue", CatalogueSchema);

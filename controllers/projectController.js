@@ -1,23 +1,16 @@
-// controllers/projectController.js
 import Project from "../models/Project.js";
-import cloudinary from "../utils/cloudinary.js";
+import fs from "fs";
+import path from "path";
 
-// Helper: upload buffer → Cloudinary (image)
-const uploadToCloudinary = (fileBuffer, folder) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: "image" },
-      (error, result) => {
-        if (error) reject(error);
-        else
-          resolve({
-            url: result.secure_url,
-            public_id: result.public_id,
-          });
-      }
-    );
-    stream.end(fileBuffer);
-  });
+/* -----------------------------
+   Helper: delete local file
+----------------------------- */
+const deleteLocalFile = (filePath) => {
+  try {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch (err) {
+    console.error("Error deleting local file:", err);
+  }
 };
 
 /* -----------------------------
@@ -31,30 +24,31 @@ export const createProject = async (req, res) => {
       return res.status(400).json({ message: "Please fill all required fields" });
     }
 
-    if (!req.files?.thumbnail) {
+    if (!req.files?.thumbnail || req.files.thumbnail.length === 0) {
       return res.status(400).json({ message: "Thumbnail is required" });
     }
 
-    // Upload thumbnail
-    const uploadedThumbnail = await uploadToCloudinary(
-      req.files.thumbnail[0].buffer,
-      "projects/thumbnails"
-    );
+    // Handle thumbnail
+    const thumbnailFile = req.files.thumbnail[0];
+    const thumbnail = {
+      url: `/uploads/projects/${thumbnailFile.filename}`,
+      filename: thumbnailFile.filename,
+    };
 
-    // Upload optional images
-    let uploadedImages = [];
-    if (req.files?.images) {
-      uploadedImages = await Promise.all(
-        req.files.images.map((file) => uploadToCloudinary(file.buffer, "projects/images"))
-      );
-    }
+    // Handle optional images
+    const images = req.files?.images
+      ? req.files.images.map((file) => ({
+          url: `/uploads/projects/${file.filename}`,
+          filename: file.filename,
+        }))
+      : [];
 
     const newProject = new Project({
       title,
       category,
       description: description || "",
-      thumbnail: uploadedThumbnail,
-      images: uploadedImages,
+      thumbnail,
+      images,
     });
 
     const savedProject = await newProject.save();
@@ -64,9 +58,10 @@ export const createProject = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error creating project:", err);
-    res
-      .status(500)
-      .json({ message: "Failed to create project", error: err.message });
+    res.status(500).json({
+      message: "Failed to create project",
+      error: err.message,
+    });
   }
 };
 
@@ -84,23 +79,37 @@ export const updateProject = async (req, res) => {
     if (description !== undefined) project.description = description;
 
     // Replace thumbnail if new one uploaded
-    if (req.files?.thumbnail) {
-      if (project.thumbnail?.public_id) {
-        await cloudinary.uploader.destroy(project.thumbnail.public_id);
+    if (req.files?.thumbnail && req.files.thumbnail.length > 0) {
+      if (project.thumbnail?.filename) {
+        deleteLocalFile(
+          path.join(process.cwd(), "uploads/projects", project.thumbnail.filename)
+        );
       }
-      const uploadedThumbnail = await uploadToCloudinary(
-        req.files.thumbnail[0].buffer,
-        "projects/thumbnails"
-      );
-      project.thumbnail = uploadedThumbnail;
+
+      const thumbnailFile = req.files.thumbnail[0];
+      project.thumbnail = {
+        url: `/uploads/projects/${thumbnailFile.filename}`,
+        filename: thumbnailFile.filename,
+      };
     }
 
-    // Add new images if provided (keep old ones too)
-    if (req.files?.images) {
-      const uploadedImages = await Promise.all(
-        req.files.images.map((file) => uploadToCloudinary(file.buffer, "projects/images"))
-      );
-      project.images.push(...uploadedImages);
+    // Replace images if new ones uploaded
+    if (req.files?.images && req.files.images.length > 0) {
+      // Delete old images first
+      if (Array.isArray(project.images) && project.images.length > 0) {
+        for (const img of project.images) {
+          if (img.filename) {
+            deleteLocalFile(
+              path.join(process.cwd(), "uploads/projects", img.filename)
+            );
+          }
+        }
+      }
+
+      project.images = req.files.images.map((file) => ({
+        url: `/uploads/projects/${file.filename}`,
+        filename: file.filename,
+      }));
     }
 
     const updatedProject = await project.save();
@@ -110,9 +119,10 @@ export const updateProject = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error updating project:", err);
-    res
-      .status(500)
-      .json({ message: "Failed to update project", error: err.message });
+    res.status(500).json({
+      message: "Failed to update project",
+      error: err.message,
+    });
   }
 };
 
@@ -125,15 +135,19 @@ export const deleteProject = async (req, res) => {
     if (!project) return res.status(404).json({ message: "Project not found" });
 
     // Delete thumbnail
-    if (project.thumbnail?.public_id) {
-      await cloudinary.uploader.destroy(project.thumbnail.public_id);
+    if (project.thumbnail?.filename) {
+      deleteLocalFile(
+        path.join(process.cwd(), "uploads/projects", project.thumbnail.filename)
+      );
     }
 
     // Delete images
-    if (project.images?.length > 0) {
+    if (Array.isArray(project.images) && project.images.length > 0) {
       for (const img of project.images) {
-        if (img.public_id) {
-          await cloudinary.uploader.destroy(img.public_id);
+        if (img.filename) {
+          deleteLocalFile(
+            path.join(process.cwd(), "uploads/projects", img.filename)
+          );
         }
       }
     }
@@ -142,9 +156,10 @@ export const deleteProject = async (req, res) => {
     res.status(200).json({ message: "🗑️ Project deleted successfully" });
   } catch (err) {
     console.error("❌ Error deleting project:", err);
-    res
-      .status(500)
-      .json({ message: "Failed to delete project", error: err.message });
+    res.status(500).json({
+      message: "Failed to delete project",
+      error: err.message,
+    });
   }
 };
 
@@ -157,9 +172,10 @@ export const getProjects = async (req, res) => {
     res.status(200).json(projects);
   } catch (err) {
     console.error("❌ Error fetching projects:", err);
-    res
-      .status(500)
-      .json({ message: "Failed to fetch projects", error: err.message });
+    res.status(500).json({
+      message: "Failed to fetch projects",
+      error: err.message,
+    });
   }
 };
 
@@ -173,8 +189,9 @@ export const getProjectById = async (req, res) => {
     res.status(200).json(project);
   } catch (err) {
     console.error("❌ Error fetching project:", err);
-    res
-      .status(500)
-      .json({ message: "Failed to fetch project", error: err.message });
+    res.status(500).json({
+      message: "Failed to fetch project",
+      error: err.message,
+    });
   }
 };

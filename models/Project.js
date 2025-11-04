@@ -12,28 +12,30 @@ const projectSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+
+    // ✅ Thumbnail (local file)
     thumbnail: {
-      url: { type: String, required: true },      // Cloudinary secure_url
-      public_id: { type: String, required: true } // Cloudinary public_id
+      url: { type: String, required: true },      // Local path (e.g., /uploads/projects/thumbnail.jpg)
+      filename: { type: String, required: true }, // Saved file name
     },
+
+    // ✅ Images (optional array of local files)
     images: [
       {
-        url: { type: String },        // not required → optional
-        public_id: { type: String },  // not required → optional
+        url: { type: String },      // Local path
+        filename: { type: String }, // Saved file name
       },
-    ], // optional: user can skip uploading
+    ],
+
     description: {
       type: String,
       trim: true,
       default: "",
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-const Project =
-  mongoose.models.Project || mongoose.model("Project", projectSchema);
+const Project = mongoose.models.Project || mongoose.model("Project", projectSchema);
 
 export default Project;

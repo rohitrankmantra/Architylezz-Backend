@@ -10,9 +10,11 @@ import {
 
 const router = express.Router();
 
-// Create product
+/* -----------------------------
+   Create new product
+----------------------------- */
 router.post(
-  "/",
+  "/create",
   upload.fields([
     { name: "thumbnail", maxCount: 1 },
     { name: "images", maxCount: 10 },
@@ -20,13 +22,19 @@ router.post(
   createProduct
 );
 
-// Get all products
+/* -----------------------------
+   Get all products
+----------------------------- */
 router.get("/", getProducts);
 
-// Get single product
+/* -----------------------------
+   Get single product by ID
+----------------------------- */
 router.get("/:id", getProductById);
 
-// Update product ✅ needs multer too
+/* -----------------------------
+   Update product
+----------------------------- */
 router.put(
   "/:id",
   upload.fields([
@@ -36,7 +44,9 @@ router.put(
   updateProduct
 );
 
-// Delete product
+/* -----------------------------
+   Delete product
+----------------------------- */
 router.delete("/:id", deleteProduct);
 
 export default router;

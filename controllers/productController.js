@@ -1,25 +1,18 @@
-// controllers/productController.js
 import Product from "../models/Product.js";
-import cloudinary from "../utils/cloudinary.js";
+import fs from "fs";
+import path from "path";
 
 /* ----------------------------------
-   Helper: Upload buffer → Cloudinary
+   Helper: Delete local file safely
 ---------------------------------- */
-const uploadToCloudinary = (fileBuffer, folder) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder },
-      (error, result) => {
-        if (error) reject(error);
-        else
-          resolve({
-            url: result.secure_url,
-            public_id: result.public_id,
-          });
-      }
-    );
-    stream.end(fileBuffer);
-  });
+const deleteLocalFile = (filePath) => {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (error) {
+    console.error("Error deleting local file:", error);
+  }
 };
 
 /* ----------------------------------
@@ -50,25 +43,28 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ message: "Please fill all required fields" });
     }
 
+    // Thumbnail required
     if (!req.files?.thumbnail || req.files.thumbnail.length === 0) {
       return res.status(400).json({ message: "Thumbnail is required" });
     }
-    const thumbnailFile = req.files.thumbnail[0];
-    const thumbnail = await uploadToCloudinary(
-      thumbnailFile.buffer,
-      "products/thumbnails"
-    );
 
+    const thumbnailFile = req.files.thumbnail[0];
+    const thumbnail = {
+      url: `/uploads/products/${thumbnailFile.filename}`,
+      filename: thumbnailFile.filename,
+    };
+
+    // At least one image required
     if (!req.files?.images || req.files.images.length === 0) {
       return res
         .status(400)
         .json({ message: "At least one product image is required" });
     }
-    const images = await Promise.all(
-      req.files.images.map((file) =>
-        uploadToCloudinary(file.buffer, "products/images")
-      )
-    );
+
+    const images = req.files.images.map((file) => ({
+      url: `/uploads/products/${file.filename}`,
+      filename: file.filename,
+    }));
 
     const newProduct = new Product({
       title,
@@ -77,7 +73,7 @@ export const createProduct = async (req, res) => {
       metaDescription: metaDescription || "",
       thumbnail,
       images,
-      size: [].concat(size), // ensure array
+      size: [].concat(size),
       category,
       finish: [].concat(finish),
       actualSize,
@@ -156,7 +152,7 @@ export const updateProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    // 🔹 Update text fields
+    // Update fields
     if (title) product.title = title;
     if (description) product.description = description;
     if (metaTitle) product.metaTitle = metaTitle;
@@ -173,30 +169,31 @@ export const updateProduct = async (req, res) => {
     if (coverageArea) product.coverageArea = coverageArea;
     if (pcsPerBox) product.pcsPerBox = pcsPerBox;
 
-    // 🔹 Replace thumbnail if new one uploaded
+    // Replace thumbnail if new one uploaded
     if (req.files?.thumbnail && req.files.thumbnail.length > 0) {
-      if (product.thumbnail?.public_id) {
-        await cloudinary.uploader.destroy(product.thumbnail.public_id);
+      if (product.thumbnail?.filename) {
+        deleteLocalFile(path.join(process.cwd(), "uploads/products", product.thumbnail.filename));
       }
       const thumbnailFile = req.files.thumbnail[0];
-      product.thumbnail = await uploadToCloudinary(
-        thumbnailFile.buffer,
-        "products/thumbnails"
-      );
+      product.thumbnail = {
+        url: `/uploads/products/${thumbnailFile.filename}`,
+        filename: thumbnailFile.filename,
+      };
     }
 
-    // 🔹 Replace images if new ones uploaded
+    // Replace images if new ones uploaded
     if (req.files?.images && req.files.images.length > 0) {
       if (Array.isArray(product.images) && product.images.length > 0) {
         for (const img of product.images) {
-          if (img.public_id) await cloudinary.uploader.destroy(img.public_id);
+          if (img.filename) {
+            deleteLocalFile(path.join(process.cwd(), "uploads/products", img.filename));
+          }
         }
       }
-      product.images = await Promise.all(
-        req.files.images.map((file) =>
-          uploadToCloudinary(file.buffer, "products/images")
-        )
-      );
+      product.images = req.files.images.map((file) => ({
+        url: `/uploads/products/${file.filename}`,
+        filename: file.filename,
+      }));
     }
 
     const updatedProduct = await product.save();
@@ -218,19 +215,21 @@ export const deleteProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    // Delete images from Cloudinary
-    if (product.thumbnail && product.thumbnail.public_id) {
-      await cloudinary.uploader.destroy(product.thumbnail.public_id);
+    // Delete thumbnail
+    if (product.thumbnail?.filename) {
+      deleteLocalFile(path.join(process.cwd(), "uploads/products", product.thumbnail.filename));
     }
+
+    // Delete all images
     if (Array.isArray(product.images) && product.images.length > 0) {
       for (const img of product.images) {
-        if (img.public_id) await cloudinary.uploader.destroy(img.public_id);
+        if (img.filename) {
+          deleteLocalFile(path.join(process.cwd(), "uploads/products", img.filename));
+        }
       }
     }
 
-    // Delete from DB
     await Product.findByIdAndDelete(req.params.id);
-
     res.status(200).json({ message: "🗑️ Product deleted successfully" });
   } catch (error) {
     console.error("❌ Error deleting product:", error);
