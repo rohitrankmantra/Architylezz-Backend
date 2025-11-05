@@ -24,9 +24,9 @@ app.use("/uploads", express.static("uploads"));
 
 // ✅ Allowed origins (comma-separated in .env)
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
+  ? process.env.ALLOWED_ORIGINS.split(",").map(origin => origin.trim())
   : ["http://localhost:3000","https://architylez.vercel.app"]; // fallback for dev
-
+  
 // ✅ CORS setup
 app.use(
   cors({

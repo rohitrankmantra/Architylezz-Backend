@@ -16,11 +16,20 @@ const deleteLocalFile = (filePath) => {
 };
 
 /* ----------------------------------
+   Helper: Get Base URL
+---------------------------------- */
+const getBaseUrl = (req) => {
+  return process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+};
+
+/* ----------------------------------
    @desc   Create a new product
    @route  POST /api/products
 ---------------------------------- */
 export const createProduct = async (req, res) => {
   try {
+    const BASE_URL = getBaseUrl(req);
+
     const {
       title,
       description,
@@ -43,18 +52,16 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ message: "Please fill all required fields" });
     }
 
-    // Thumbnail required
     if (!req.files?.thumbnail || req.files.thumbnail.length === 0) {
       return res.status(400).json({ message: "Thumbnail is required" });
     }
 
     const thumbnailFile = req.files.thumbnail[0];
     const thumbnail = {
-      url: `/uploads/products/${thumbnailFile.filename}`,
+      url: `${BASE_URL}/uploads/products/${thumbnailFile.filename}`,
       filename: thumbnailFile.filename,
     };
 
-    // At least one image required
     if (!req.files?.images || req.files.images.length === 0) {
       return res
         .status(400)
@@ -62,7 +69,7 @@ export const createProduct = async (req, res) => {
     }
 
     const images = req.files.images.map((file) => ({
-      url: `/uploads/products/${file.filename}`,
+      url: `${BASE_URL}/uploads/products/${file.filename}`,
       filename: file.filename,
     }));
 
@@ -102,8 +109,30 @@ export const createProduct = async (req, res) => {
 ---------------------------------- */
 export const getProducts = async (req, res) => {
   try {
+    const BASE_URL = getBaseUrl(req);
     const products = await Product.find().sort({ createdAt: -1 });
-    res.status(200).json(products);
+
+    const updatedProducts = products.map((product) => ({
+      ...product._doc,
+      thumbnail: product.thumbnail
+        ? {
+            ...product.thumbnail,
+            url: product.thumbnail.url.startsWith("http")
+              ? product.thumbnail.url
+              : `${BASE_URL}${product.thumbnail.url}`,
+          }
+        : null,
+      images: Array.isArray(product.images)
+        ? product.images.map((img) => ({
+            ...img,
+            url: img.url.startsWith("http")
+              ? img.url
+              : `${BASE_URL}${img.url}`,
+          }))
+        : [],
+    }));
+
+    res.status(200).json(updatedProducts);
   } catch (error) {
     console.error("❌ Error fetching products:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -116,9 +145,31 @@ export const getProducts = async (req, res) => {
 ---------------------------------- */
 export const getProductById = async (req, res) => {
   try {
+    const BASE_URL = getBaseUrl(req);
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
-    res.status(200).json(product);
+
+    const updatedProduct = {
+      ...product._doc,
+      thumbnail: product.thumbnail
+        ? {
+            ...product.thumbnail,
+            url: product.thumbnail.url.startsWith("http")
+              ? product.thumbnail.url
+              : `${BASE_URL}${product.thumbnail.url}`,
+          }
+        : null,
+      images: Array.isArray(product.images)
+        ? product.images.map((img) => ({
+            ...img,
+            url: img.url.startsWith("http")
+              ? img.url
+              : `${BASE_URL}${img.url}`,
+          }))
+        : [],
+    };
+
+    res.status(200).json(updatedProduct);
   } catch (error) {
     console.error("❌ Error fetching product:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -131,6 +182,7 @@ export const getProductById = async (req, res) => {
 ---------------------------------- */
 export const updateProduct = async (req, res) => {
   try {
+    const BASE_URL = getBaseUrl(req);
     const {
       title,
       description,
@@ -172,11 +224,13 @@ export const updateProduct = async (req, res) => {
     // Replace thumbnail if new one uploaded
     if (req.files?.thumbnail && req.files.thumbnail.length > 0) {
       if (product.thumbnail?.filename) {
-        deleteLocalFile(path.join(process.cwd(), "uploads/products", product.thumbnail.filename));
+        deleteLocalFile(
+          path.join(process.cwd(), "uploads/products", product.thumbnail.filename)
+        );
       }
       const thumbnailFile = req.files.thumbnail[0];
       product.thumbnail = {
-        url: `/uploads/products/${thumbnailFile.filename}`,
+        url: `${BASE_URL}/uploads/products/${thumbnailFile.filename}`,
         filename: thumbnailFile.filename,
       };
     }
@@ -186,12 +240,14 @@ export const updateProduct = async (req, res) => {
       if (Array.isArray(product.images) && product.images.length > 0) {
         for (const img of product.images) {
           if (img.filename) {
-            deleteLocalFile(path.join(process.cwd(), "uploads/products", img.filename));
+            deleteLocalFile(
+              path.join(process.cwd(), "uploads/products", img.filename)
+            );
           }
         }
       }
       product.images = req.files.images.map((file) => ({
-        url: `/uploads/products/${file.filename}`,
+        url: `${BASE_URL}/uploads/products/${file.filename}`,
         filename: file.filename,
       }));
     }
@@ -217,14 +273,18 @@ export const deleteProduct = async (req, res) => {
 
     // Delete thumbnail
     if (product.thumbnail?.filename) {
-      deleteLocalFile(path.join(process.cwd(), "uploads/products", product.thumbnail.filename));
+      deleteLocalFile(
+        path.join(process.cwd(), "uploads/products", product.thumbnail.filename)
+      );
     }
 
     // Delete all images
     if (Array.isArray(product.images) && product.images.length > 0) {
       for (const img of product.images) {
         if (img.filename) {
-          deleteLocalFile(path.join(process.cwd(), "uploads/products", img.filename));
+          deleteLocalFile(
+            path.join(process.cwd(), "uploads/products", img.filename)
+          );
         }
       }
     }
